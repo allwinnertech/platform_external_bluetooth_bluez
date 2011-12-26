@@ -132,6 +132,8 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:= \
 	hciattach.c \
+	hciattach_usibcm4329.c \
+	mac.c \
 	hciattach_ath3k.c \
 	hciattach_qualcomm.c \
 	hciattach_st.c \
@@ -211,6 +213,7 @@ LOCAL_C_INCLUDES:=\
 LOCAL_SHARED_LIBRARIES := \
 	libbluetooth libbluetoothd
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE:=bccmd
 
 include $(BUILD_EXECUTABLE)

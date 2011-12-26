@@ -1034,6 +1034,12 @@ static int bcm2035(int fd, struct uart_t *u, struct termios *ti)
 	return 0;
 }
 
+static int bcm4329(int fd, struct uart_t *u, struct termios *ti)
+{
+    printf(">>> bcm4329\n");
+    return bcm4329_init(fd, u->speed, u->bdaddr, ti);
+}
+
 struct uart_t uart[] = {
 	{ "any",        0x0000, 0x0000, HCI_UART_H4,   115200, 115200,
 				FLOW_CTL, DISABLE_PM, NULL, NULL     },
@@ -1137,6 +1143,10 @@ struct uart_t uart[] = {
 	{ "qualcomm",   0x0000, 0x0000, HCI_UART_H4,   115200, 115200,
 			FLOW_CTL, DISABLE_PM, NULL, qualcomm, NULL },
 
+	/* Broadcom BCM4329 */
+	{ "bcm4329",    0x0A5C, 0x4329, HCI_UART_H4,   115200, 1500000, 
+			FLOW_CTL, DISABLE_PM, NULL, bcm4329  },
+
 	{ NULL, 0 }
 };
 
@@ -1160,12 +1170,60 @@ static struct uart_t * get_by_type(char *type)
 	return NULL;
 }
 
+/*
+ * winner's application
+ * if start hciattach without a valid mac address
+ * then generate one to use
+ */
+extern int sw_get_btaddrstr(char* bdaddr_str);
+static char addr_str[20] = {0};
+static int check_set_btaddr(struct uart_t *u)
+{
+    if (u->bdaddr == NULL) {
+        printf("bt addr is not set in argumants\n");
+        sw_get_btaddrstr(addr_str);
+        u->bdaddr = addr_str;
+    }
+    return 0;
+}
+
+static int load_bt_firmware(char *dev, struct uart_t *u)
+{
+    int ret;
+    char c2[256] = {0};
+    char dev_tty[20] = {0};
+    
+    strcpy(dev_tty, dev);
+    if (!strcmp(u->type, "bcm4330")) {
+        printf("bcm4330 bluetooth\n");
+        sprintf(c2, "patch_plus -d /drv/bcm4330.hcd %s %s %d", 
+                                    dev_tty, u->type, u->speed);
+        printf("%s\n", c2);
+        
+        ret = system(c2);
+        if(ret != 0) {
+            printf("ERROR:bcm4329---system ret=%d\n", ret);
+            return -1;
+        }
+    } else {
+        printf("module %s need not to patch firmware\n", u->type);
+    }
+    return 0;
+}
+
 /* Initialize UART driver */
 static int init_uart(char *dev, struct uart_t *u, int send_break, int raw)
 {
 	struct termios ti;
 	int fd, i;
 	unsigned long flags = 0;
+	
+    /* check mac addr, if not set, read from file or generate it*/
+    check_set_btaddr(u);
+    
+    /* load firmware into bt module */
+    load_bt_firmware(dev, u);
+    usleep(200000);
 
 	if (raw)
 		flags |= 1 << HCI_UART_RAW_DEVICE;
@@ -1219,7 +1277,7 @@ static int init_uart(char *dev, struct uart_t *u, int send_break, int raw)
 		perror("Can't set baud rate");
 		return -1;
 	}
-
+	
 	/* Set TTY to N_HCI line discipline */
 	i = N_HCI;
 	if (ioctl(fd, TIOCSETD, &i) < 0) {

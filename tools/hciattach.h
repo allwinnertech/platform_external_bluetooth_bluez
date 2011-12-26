@@ -54,3 +54,4 @@ int ath3k_init(int fd, int speed, int init_speed, char *bdaddr,
 						struct termios *ti);
 int ath3k_post(int fd, int pm);
 int qualcomm_init(int fd, int speed, struct termios *ti, const char *bdaddr);
+int bcm4329_init(int fd, int speed, char* addr, struct termios *ti);
