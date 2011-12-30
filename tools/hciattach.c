@@ -1196,7 +1196,7 @@ static int load_bt_firmware(char *dev, struct uart_t *u)
     strcpy(dev_tty, dev);
     if (!strcmp(u->type, "bcm4330")) {
         printf("bcm4330 bluetooth\n");
-        sprintf(c2, "patch_plus -d /drv/bcm4330.hcd %s %s %d", 
+        sprintf(c2, "patch_plus -d /system/vendor/modules/bcm4330.hcd %s %s %d", 
                                     dev_tty, u->type, u->speed);
         printf("%s\n", c2);
         
